@@ -21,7 +21,7 @@ streams `A` and `B` in order to produce `C` and and these are types of problems 
 
 ... TODO: put a diagram here ...
 
-Without further ado let's get right to it.
+Without any further ado, let's get started.
 
 ## Quickstart
 
