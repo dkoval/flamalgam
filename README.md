@@ -29,4 +29,4 @@ Without further ado let's get right to it.
 
 ## Licence
 
-The project is distributed under the terms of the [Apache 2.0 License](LICENSE).
+The project is distributed under the terms of the [Apache 2.0 License](LICENSE.txt).
