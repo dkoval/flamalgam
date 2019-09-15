@@ -17,7 +17,7 @@ Imagine you already [CDC](https://en.wikipedia.org/wiki/Change_data_capture) -ed
 from your RDBS of choice and now want to create a higher-order view `C` out of these streams of data. You may then want 
 to store this new view of original data in another specialized database, say [Elasticsearch](https://www.elastic.co/), 
 to optimize the read layer of the system you are building. But first things first - you somehow need to `join` infinite 
-streams `A` and `B` in order to produce `C` and and this is exactly the type of problem this deals with.
+streams `A` and `B` in order to produce `C` and and this is exactly the type of problem this project deals with.
 
 ... Put a diagram here ...
 
