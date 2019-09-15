@@ -1,6 +1,6 @@
 # flamalgam
 
-## Problem
+## Introduction
 
 Join is a fundamental operation in SQL. However, it's far from trivial to model and execute this type of operation in 
 a streaming environment. The problem becomes even more difficult to tackle if you need to join infinite data streams. 
@@ -19,7 +19,7 @@ to store this new view of original data in another specialized database, say [El
 to optimize the read layer of the system you are building. But first things first - you somehow need to `join` infinite 
 streams `A` and `B` in order to produce `C` and and these are types of problems this project deals with.
 
-... Put a diagram here ...
+... TODO: put a diagram here ...
 
 Without further ado let's get right to it.
 
