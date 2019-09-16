@@ -5,7 +5,7 @@ import org.apache.flink.streaming.api.datastream.DataStream
 
 class Joiner<K : Comparable<K>, V : Any>(
         private val parentStream: DataStream<Record<K, V>>,
-        private val parentDescriptor: Cardinality.One<V>) {
+        private val parentCardinality: Cardinality.One<V>) {
 
     fun <U : Any> oneToMany(childStream: DataStream<Record<K, U>>,
                             cardinality: Cardinality.Many<U>): Joiner<K, V> {
