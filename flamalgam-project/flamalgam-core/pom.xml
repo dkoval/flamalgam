@@ -6,18 +6,16 @@
 
     <parent>
         <groupId>com.github.dkoval</groupId>
-        <artifactId>flamalgam</artifactId>
+        <artifactId>flamalgam-project</artifactId>
         <version>0.1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>flamalgam-project</artifactId>
-    <packaging>pom</packaging>
-    <description>Flamalgam :: Project</description>
+    <artifactId>flamalgam-core</artifactId>
+    <description>Flamalgam :: Project :: Core</description>
 
-    <modules>
-        <module>flamalgam-core</module>
-        <module>flamalgam-dsl</module>
-    </modules>
+    <dependencies>
+
+    </dependencies>
 
 </project>
