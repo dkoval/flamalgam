@@ -2,17 +2,18 @@ package com.github.dkoval.core.dsl
 
 import com.github.dkoval.core.Record
 import org.apache.flink.streaming.api.datastream.DataStream
+import java.util.function.Supplier
 
 class Relationships<K : Comparable<K>, V : Any>(
         private val parentStream: DataStream<Record<K, V>>,
         private val parentCardinality: Cardinality.One<V>) {
 
-    fun <U : Any> oneToMany(childStream: DataStream<Record<K, U>>,
+    fun <U : Any> oneToMany(stream: DataStream<Record<K, U>>,
                             cardinality: Cardinality.Many<U>): Relationships<K, V> {
         TODO()
     }
 
-    fun <U : Any> manyToOne(childStream: DataStream<Record<K, U>>,
+    fun <U : Any> manyToOne(stream: DataStream<Record<K, U>>,
                             cardinality: Cardinality.One<U>): Relationships<K, V> {
         TODO()
     }
@@ -20,8 +21,24 @@ class Relationships<K : Comparable<K>, V : Any>(
     fun join(): JoinResult<V> {
         TODO()
     }
+
+    companion object {
+        @JvmStatic
+        fun <K : Comparable<K>, V : Any> create(supplier: Supplier<Relationships<K, V>>) = supplier.get()
+
+        @JvmStatic
+        fun <K : Comparable<K>, V : Any> parent(stream: DataStream<Record<K, V>>,
+                                                name: String,
+                                                clazz: Class<V>): Relationships<K, V> {
+            return parent(stream, Cardinality.One(name, clazz))
+        }
+
+        @JvmStatic
+        fun <K : Comparable<K>, V : Any> parent(stream: DataStream<Record<K, V>>,
+                                                cardinality: Cardinality.One<V>): Relationships<K, V> {
+            return Relationships(stream, cardinality)
+        }
+    }
 }
 
-fun <K : Comparable<K>, V : Any> DataStream<Record<K, V>>.relationships(
-        cardinality: Cardinality.One<V>,
-        block: Relationships<K, V>.() -> Unit): JoinResult<V> = Relationships(this, cardinality).apply(block).join()
+fun <K : Comparable<K>, V : Any> relationships(block: () -> Relationships<K, V>) = Relationships.create(Supplier { block() })
