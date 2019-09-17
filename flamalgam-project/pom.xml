@@ -17,7 +17,6 @@
 
     <modules>
         <module>flamalgam-core</module>
-        <module>flamalgam-dsl</module>
     </modules>
 
 </project>
