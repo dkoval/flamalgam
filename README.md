@@ -6,7 +6,7 @@ Join is a fundamental operation in SQL. However, it's far from trivial to model 
 a streaming environment. The problem becomes even more difficult to tackle if you need to join infinite data streams. 
 That is, where a concept of a timed window is no longer applicable.
 
-`Flamalgam` project aims to implement SQL join semantics on infinite data streams leveraging [Apache Flink](https://flink.apache.org/) 
+`Flamalgam` project aims to achieve SQL join semantic on infinite data streams, leveraging [Apache Flink](https://flink.apache.org/) 
 as a stream processing technology and [Kotlin](https://kotlinlang.org/) as a programming language of choice.
 
 ## What is it for?
