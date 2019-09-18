@@ -1,16 +1,16 @@
 package com.github.dkoval.core.dsl
 
-sealed class Cardinality<T : Any>(
+sealed class Relationship<T : Any>(
         open val name: String,
         open val clazz: Class<T>) {
 
     data class One<T : Any>(
             override val name: String,
-            override val clazz: Class<T>) : Cardinality<T>(name, clazz)
+            override val clazz: Class<T>) : Relationship<T>(name, clazz)
 
     data class Many<T : Any>(
             override val name: String,
-            override val clazz: Class<T>) : Cardinality<T>(name, clazz)
+            override val clazz: Class<T>) : Relationship<T>(name, clazz)
 
     companion object {
         @JvmStatic
