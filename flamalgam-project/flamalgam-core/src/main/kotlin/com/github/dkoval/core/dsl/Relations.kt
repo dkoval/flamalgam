@@ -2,19 +2,18 @@ package com.github.dkoval.core.dsl
 
 import com.github.dkoval.core.Record
 import org.apache.flink.streaming.api.datastream.DataStream
-import java.util.function.Supplier
 
-class Relationships<K : Comparable<K>, V : Any>(
+class Relations<K : Comparable<K>, V : Any>(
         private val parentStream: DataStream<Record<K, V>>,
         private val parentCardinality: Cardinality.One<V>) {
 
     fun <U : Any> oneToMany(stream: DataStream<Record<K, U>>,
-                            cardinality: Cardinality.Many<U>): Relationships<K, V> {
+                            cardinality: Cardinality.Many<U>): Relations<K, V> {
         TODO()
     }
 
     fun <U : Any> manyToOne(stream: DataStream<Record<K, U>>,
-                            cardinality: Cardinality.One<U>): Relationships<K, V> {
+                            cardinality: Cardinality.One<U>): Relations<K, V> {
         TODO()
     }
 
@@ -24,21 +23,21 @@ class Relationships<K : Comparable<K>, V : Any>(
 
     companion object {
         @JvmStatic
-        fun <K : Comparable<K>, V : Any> create(supplier: Supplier<Relationships<K, V>>) = supplier.get()
+        fun <K : Comparable<K>, V : Any> create(block: () -> Relations<K, V>) = block()
 
         @JvmStatic
         fun <K : Comparable<K>, V : Any> parent(stream: DataStream<Record<K, V>>,
                                                 name: String,
-                                                clazz: Class<V>): Relationships<K, V> {
+                                                clazz: Class<V>): Relations<K, V> {
             return parent(stream, Cardinality.One(name, clazz))
         }
 
         @JvmStatic
         fun <K : Comparable<K>, V : Any> parent(stream: DataStream<Record<K, V>>,
-                                                cardinality: Cardinality.One<V>): Relationships<K, V> {
-            return Relationships(stream, cardinality)
+                                                cardinality: Cardinality.One<V>): Relations<K, V> {
+            return Relations(stream, cardinality)
         }
     }
 }
 
-fun <K : Comparable<K>, V : Any> relationships(block: () -> Relationships<K, V>) = Relationships.create(Supplier { block() })
+fun <K : Comparable<K>, V : Any> relations(block: () -> Relations<K, V>) = Relations.create(block)
