@@ -26,15 +26,15 @@ class Relationships<K : Comparable<K>, V : Any>(
         fun <K : Comparable<K>, V : Any> create(block: () -> Relationships<K, V>) = block()
 
         @JvmStatic
-        fun <K : Comparable<K>, V : Any> parent(stream: DataStream<Record<K, V>>,
-                                                name: String,
-                                                clazz: Class<V>): Relationships<K, V> {
-            return parent(stream, Cardinality.One(name, clazz))
+        fun <K : Comparable<K>, V : Any> between(stream: DataStream<Record<K, V>>,
+                                                 name: String,
+                                                 clazz: Class<V>): Relationships<K, V> {
+            return between(stream, Cardinality.One(name, clazz))
         }
 
         @JvmStatic
-        fun <K : Comparable<K>, V : Any> parent(stream: DataStream<Record<K, V>>,
-                                                cardinality: Cardinality.One<V>): Relationships<K, V> {
+        fun <K : Comparable<K>, V : Any> between(stream: DataStream<Record<K, V>>,
+                                                 cardinality: Cardinality.One<V>): Relationships<K, V> {
             return Relationships(stream, cardinality)
         }
     }
