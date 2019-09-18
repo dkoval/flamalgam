@@ -7,8 +7,8 @@ a streaming environment. The problem becomes even more difficult to tackle if yo
 That is, where a concept of a timed window is no longer applicable.
 
 The project goal is to mimic [relational algebra](https://en.wikipedia.org/wiki/Relational_algebra) `JOIN` operator 
-on infinite data streams. The implementation makes use of [Apache Flink](https://flink.apache.org/) as a stream processing 
-technology and [Kotlin](https://kotlinlang.org/) as a programming language of choice.
+on infinite data streams. The underlying implementation makes use of [Apache Flink](https://flink.apache.org/) 
+as a stream processing technology and [Kotlin](https://kotlinlang.org/) as a programming language of choice.
 
 ## What is it for?
 
