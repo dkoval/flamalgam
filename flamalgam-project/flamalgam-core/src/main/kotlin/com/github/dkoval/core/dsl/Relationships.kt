@@ -2,7 +2,6 @@ package com.github.dkoval.core.dsl
 
 import com.github.dkoval.core.Record
 import org.apache.flink.streaming.api.datastream.DataStream
-import java.util.function.Supplier
 
 class Relationships<K : Comparable<K>, V : Any>(
         private val parentStream: DataStream<Record<K, V>>,
@@ -24,7 +23,7 @@ class Relationships<K : Comparable<K>, V : Any>(
 
     companion object {
         @JvmStatic
-        fun <K : Comparable<K>, V : Any> create(supplier: Supplier<Relationships<K, V>>) = supplier.get()
+        fun <K : Comparable<K>, V : Any> create(block: () -> Relationships<K, V>) = block()
 
         @JvmStatic
         fun <K : Comparable<K>, V : Any> parent(stream: DataStream<Record<K, V>>,
@@ -41,4 +40,4 @@ class Relationships<K : Comparable<K>, V : Any>(
     }
 }
 
-fun <K : Comparable<K>, V : Any> relationships(block: () -> Relationships<K, V>) = Relationships.create(Supplier { block() })
+fun <K : Comparable<K>, V : Any> relationships(block: () -> Relationships<K, V>) = Relationships.create(block)
