@@ -1,5 +1,7 @@
 # flamalgam
 
+Apache Flink powered Implementation of relational JOIN operator on infinite data streams.
+
 ## Introduction
 
 Join is a fundamental operation in SQL. However, it's far from trivial to model and execute this type of operation in 
