@@ -1,4 +1,4 @@
-# flamalgam
+# flamalgam [![Build Status](https://travis-ci.org/dkoval/flamalgam.svg?branch=master)](https://travis-ci.org/dkoval/flamalgam)
 
 Apache Flink-powered Implementation of relational JOIN operator on infinite data streams.
 
