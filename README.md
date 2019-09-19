@@ -1,6 +1,6 @@
 # flamalgam
 
-Apache Flink powered Implementation of relational JOIN operator on infinite data streams.
+Apache Flink-powered Implementation of relational JOIN operator on infinite data streams.
 
 ## Introduction
 
