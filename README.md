@@ -6,7 +6,7 @@ Join is a fundamental operation in SQL. However, it's far from trivial to model 
 a streaming environment. The problem becomes even more difficult to tackle if you need to join infinite data streams. 
 That is, where a concept of a timed window is no longer applicable.
 
-The project goal is to mimic [relational algebra](https://en.wikipedia.org/wiki/Relational_algebra) `JOIN` operator 
+The project goal is to mimic [relational](https://en.wikipedia.org/wiki/Relational_algebra) `JOIN` operator 
 on infinite data streams. The underlying implementation makes use of [Apache Flink](https://flink.apache.org/) 
 as a stream processing technology and [Kotlin](https://kotlinlang.org/) as a programming language of choice.
 
