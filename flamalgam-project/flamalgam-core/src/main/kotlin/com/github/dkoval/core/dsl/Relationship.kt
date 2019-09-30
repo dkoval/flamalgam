@@ -4,19 +4,19 @@ sealed class Relationship<T : Any>(
         open val name: String,
         open val clazz: Class<T>) {
 
-    data class One<T : Any>(
+    data class OneToMany<T : Any>(
             override val name: String,
             override val clazz: Class<T>) : Relationship<T>(name, clazz)
 
-    data class Many<T : Any>(
+    data class ManyToOne<T : Any>(
             override val name: String,
             override val clazz: Class<T>) : Relationship<T>(name, clazz)
 
     companion object {
         @JvmStatic
-        fun <T : Any> one(name: String, clazz: Class<T>) = One(name, clazz)
+        fun <T : Any> oneToMany(name: String, clazz: Class<T>) = OneToMany(name, clazz)
 
         @JvmStatic
-        fun <T : Any> many(name: String, clazz: Class<T>) = Many(name, clazz)
+        fun <T : Any> manyToOne(name: String, clazz: Class<T>) = ManyToOne(name, clazz)
     }
 }
