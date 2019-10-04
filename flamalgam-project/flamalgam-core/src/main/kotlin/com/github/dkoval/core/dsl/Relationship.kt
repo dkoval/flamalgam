@@ -1,14 +1,14 @@
 package com.github.dkoval.core.dsl
 
-sealed class Relationship<T : Any> {
+sealed class Relationship<T> {
     abstract val name: String
     abstract val clazz: Class<T>
 
-    data class OneToMany<T : Any>(
+    data class OneToMany<T>(
             override val name: String,
             override val clazz: Class<T>) : Relationship<T>()
 
-    data class ManyToOne<T : Any>(
+    data class ManyToOne<T>(
             override val name: String,
             override val clazz: Class<T>) : Relationship<T>()
 

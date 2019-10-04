@@ -1,36 +1,37 @@
 package com.github.dkoval.core.dsl
 
-import com.github.dkoval.core.KeyedEvent
-import com.github.dkoval.core.Record
-import org.apache.flink.api.common.functions.MapFunction
+import com.github.dkoval.core.Event
+import com.github.dkoval.core.RekeyedEvent
+import com.github.dkoval.core.rekey
 import org.apache.flink.api.java.functions.KeySelector
 import org.apache.flink.streaming.api.datastream.DataStream
 import java.util.*
 
-class Relationships<K : Comparable<K>, T : Any>(
-        private val parentStream: DataStream<Record<K, T>>) {
+class Relationships<K : Any, V>(
+        private val parentStream: DataStream<Event<K, V>>) {
 
-    private val keyedChildStreams: MutableList<DataStream<KeyedEvent<K>>> = LinkedList()
+    private val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<K>>> = LinkedList()
 
-    fun <U : Any> oneToMany(childStream: DataStream<Record<K, U>>,
-                            foreignKeySelector: KeySelector<U, K>,
-                            relationship: Relationship.OneToMany<U>): Relationships<K, T> {
-        val keyedChildStream = childStream
+    fun <U> oneToMany(childStream: DataStream<Event<*, U>>,
+                      parentKeySelector: KeySelector<U, K>,
+                      relationship: Relationship.OneToMany<U>): Relationships<K, V> {
+
+        val rekeyedChildStream = childStream
                 .keyBy { it.key }
-                .flatMap(RelationshipGuard.oneToMany(foreignKeySelector, relationship.name))
+                .flatMap(RelationshipGuard.oneToMany(parentKeySelector, relationship.name))
                 .name(relationship.name)
                 .uid(relationship.name)
 
-        keyedChildStreams.add(keyedChildStream)
+        rekeyedChildStreams.add(rekeyedChildStream)
         return this
     }
 
-    fun join(): DataStream<KeyedEvent<K>> {
-        return parentStream
-                .map { KeyedEvent(it.key, it, isParent = true) }
-                .union(*keyedChildStreams.toTypedArray())
+    fun join(): DataStream<RekeyedEvent<K>> {
+        val rekeyedParentStream = parentStream
+                .map { it.rekey(it.key, true) }
+
+        return rekeyedParentStream
+                .union(*rekeyedChildStreams.toTypedArray())
                 .keyBy { it.key }
     }
-
-    fun <R : Any> join(mapper: MapFunction<KeyedEvent<K>, R>): DataStream<R> = TODO()
 }
