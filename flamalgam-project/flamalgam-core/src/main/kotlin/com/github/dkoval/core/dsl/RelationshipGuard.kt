@@ -26,12 +26,13 @@ sealed class RelationshipGuard<K : Any, V>(
     }
 
     override fun flatMap(newEvent: Event<*, V>, out: Collector<RekeyedEvent<K>>) {
+        val valueInState = relationshipState.value()
+
         // ignore stale events
-        val currentValueInState = relationshipState.value()
-        currentValueInState?.also {
-            val (currentEvent, _) = it
-            if (!newEvent.isNewerThan(currentEvent)) {
-                logger.debug("Ignoring stale record. New event: {}, current event: {}", newEvent, currentEvent)
+        valueInState?.also {
+            val (oldEvent, _) = it
+            if (!newEvent.isNewerThan(oldEvent)) {
+                logger.debug("Ignoring stale record. New event: {}, current event: {}", newEvent, oldEvent)
                 return@flatMap
             }
         }
@@ -41,12 +42,12 @@ sealed class RelationshipGuard<K : Any, V>(
         relationshipState.update(newEvent to newParentKey)
 
         // handle relationship change
-        currentValueInState?.also {
-            val (_, currentParentKey) = it
-            if (newParentKey == null || currentParentKey != newParentKey) {
+        valueInState?.also {
+            val (_, oldParentKey) = it
+            if (newParentKey == null || oldParentKey != newParentKey) {
                 // emit `relationship discarded` event
-                val event = RelationshipDiscardedEvent(newEvent.key, newEvent.version, currentParentKey)
-                        .rekey(currentParentKey)
+                val event = RelationshipDiscardedEvent(newEvent.key, newEvent.version, oldParentKey)
+                        .rekey(oldParentKey)
                 out.collect(event)
             }
         }

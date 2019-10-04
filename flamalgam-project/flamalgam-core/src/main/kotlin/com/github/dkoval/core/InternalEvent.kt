@@ -5,7 +5,7 @@ sealed class InternalEvent<out K : Any, out V> : Event<K, V>
 data class RelationshipDiscardedEvent<out K : Any, out PK : Any>(
         override val key: K,
         override val version: Long,
-        val parentKey: PK) : InternalEvent<K, Nothing>() {
+        val oldParentKey: PK) : InternalEvent<K, Nothing>() {
 
     override val value: Nothing
         get() = throw IllegalStateException("No value is expected here")
