@@ -1,6 +1,6 @@
-package com.github.dkoval.core.dsl
+package com.github.dkoval.core.dsl.internal
 
-import com.github.dkoval.core.*
+import com.github.dkoval.core.event.*
 import org.apache.flink.api.common.functions.RichFlatMapFunction
 import org.apache.flink.api.common.state.ValueState
 import org.apache.flink.api.common.state.ValueStateDescriptor

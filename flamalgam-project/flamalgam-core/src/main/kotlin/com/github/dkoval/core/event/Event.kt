@@ -1,4 +1,4 @@
-package com.github.dkoval.core
+package com.github.dkoval.core.event
 
 interface Event<out K : Any, out V> {
     val key: K

@@ -1,4 +1,4 @@
-package com.github.dkoval.core
+package com.github.dkoval.core.event
 
 sealed class InternalEvent<out K : Any, out V> : Event<K, V>
 

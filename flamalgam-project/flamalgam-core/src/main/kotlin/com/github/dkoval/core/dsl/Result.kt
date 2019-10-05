@@ -1,6 +1,6 @@
 package com.github.dkoval.core.dsl
 
-interface Hierarchy<out T : Any> {
+interface Result<out T : Any> {
     val parent: T
     operator fun <U : Any> get(relationship: Relationship.OneToMany<U>): Iterable<U>?
     operator fun <U : Any> get(relationship: Relationship.ManyToOne<U>): U?
