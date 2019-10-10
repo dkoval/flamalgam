@@ -1,8 +1,8 @@
 package com.github.dkoval.core.event
 
-sealed class InternalEvent<out K : Any, out V> : Event<K, V>
+sealed class InternalEvent<out K, out V> : Event<K, V>
 
-data class RelationshipDiscardedEvent<out K : Any, out PK : Any>(
+data class RelationshipDiscardedEvent<out K, out PK>(
         override val key: K,
         override val version: Long,
         val oldParentKey: PK) : InternalEvent<K, Nothing>() {
@@ -11,7 +11,7 @@ data class RelationshipDiscardedEvent<out K : Any, out PK : Any>(
         get() = throw IllegalStateException("No value is expected here")
 }
 
-data class RekeyedEvent<out K : Any>(
+data class RekeyedEvent<out K>(
         override val key: K,
         val source: Event<*, *>,
         val isParent: Boolean = false) : InternalEvent<K, Any?>() {
@@ -23,6 +23,6 @@ data class RekeyedEvent<out K : Any>(
         get() = source.value
 }
 
-fun <K : Any, V> Event<*, V>.rekey(key: K, asParent: Boolean = false): RekeyedEvent<K> {
+fun <K, V> Event<*, V>.rekey(key: K, asParent: Boolean = false): RekeyedEvent<K> {
     return RekeyedEvent(key, this, asParent);
 }

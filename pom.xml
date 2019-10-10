@@ -17,7 +17,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <flink.version>1.9.0</flink.version>
         <slf4j.version>1.7.28</slf4j.version>
-        <junit5.version>5.3.1</junit5.version>
+        <flinkspector.version>0.9.4</flinkspector.version>
     </properties>
 
     <modules>
@@ -33,16 +33,19 @@
                 <version>${flink.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.flink</groupId>
+                <artifactId>flink-test-utils_2.11</artifactId>
+                <version>${flink.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>${junit5.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
+                <groupId>io.flinkspector</groupId>
+                <artifactId>flinkspector-datastream_2.11</artifactId>
+                <version>${flinkspector.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

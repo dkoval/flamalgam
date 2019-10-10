@@ -14,9 +14,9 @@ sealed class Relationship<T> {
 
     companion object {
         @JvmStatic
-        fun <T : Any> oneToMany(name: String, clazz: Class<T>) = OneToMany(name, clazz)
+        inline fun <reified T> oneToMany(name: String) = OneToMany(name, T::class.java)
 
         @JvmStatic
-        fun <T : Any> manyToOne(name: String, clazz: Class<T>) = ManyToOne(name, clazz)
+        inline fun <reified T> manyToOne(name: String) = ManyToOne(name, T::class.java)
     }
 }

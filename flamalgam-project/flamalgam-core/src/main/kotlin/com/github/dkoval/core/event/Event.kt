@@ -1,12 +1,12 @@
 package com.github.dkoval.core.event
 
-interface Event<out K : Any, out V> {
+interface Event<out K, out V> {
     val key: K
     val version: Long
     val value: V?
 }
 
-fun <K : Any, V> Event<K, V>.isNewerThan(that: Event<K, V>): Boolean {
+fun <K, V> Event<K, V>.isNewerThan(that: Event<K, V>): Boolean {
     if (this === that) {
         return false
     }
