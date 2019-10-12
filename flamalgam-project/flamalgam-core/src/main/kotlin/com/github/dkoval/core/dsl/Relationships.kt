@@ -8,14 +8,14 @@ import org.apache.flink.api.java.functions.KeySelector
 import org.apache.flink.streaming.api.datastream.DataStream
 import java.util.*
 
-class Relationships<PK, PV>(
-        private val parentStream: DataStream<Event<PK, PV>>) {
+class Relationships<K, V> private constructor(
+        private val parentStream: DataStream<Event<K, V>>) {
 
-    private val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<PK>>> = LinkedList()
+    private val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<K>>> = LinkedList()
 
-    fun <CK, CV> oneToMany(childStream: DataStream<Event<CK, CV>>,
-                           parentKeySelector: KeySelector<CV, PK>,
-                           relationship: Relationship.OneToMany<CV>): Relationships<PK, PV> {
+    fun <U> oneToMany(childStream: DataStream<Event<K, U>>,
+                      parentKeySelector: KeySelector<U, K>,
+                      relationship: Relationship.OneToMany<U>): Relationships<K, V> {
 
         val rekeyedChildStream = childStream
                 .keyBy { it.key }
@@ -27,12 +27,17 @@ class Relationships<PK, PV>(
         return this
     }
 
-    fun join(): DataStream<RekeyedEvent<PK>> {
+    fun join(): DataStream<RekeyedEvent<K>> {
         val rekeyedParentStream = parentStream
                 .map { it.rekey(it.key, true) }
 
         return rekeyedParentStream
-                .union(*rekeyedChildStreams.toTypedArray())
+                .union(*this.rekeyedChildStreams.toTypedArray())
                 .keyBy { it.key }
+    }
+
+    companion object {
+        @JvmStatic
+        fun <K, V> parent(parentStream: DataStream<Event<K, V>>): Relationships<K, V> = Relationships(parentStream)
     }
 }
