@@ -10,18 +10,18 @@ import org.apache.flink.api.java.functions.KeySelector
 import org.apache.flink.streaming.api.datastream.DataStream
 import java.util.*
 
-class Relationships<K, V>(
-        private val parentStream: DataStream<Event<K, V>>,
-        private val keyClass: Class<K>) {
+class Relationships<PK, PV>(
+        private val parentStream: DataStream<Event<PK, PV>>,
+        private val parentKeyClass: Class<PK>) {
 
-    private val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<K>>> = LinkedList()
+    private val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<PK>>> = LinkedList()
 
-    fun <U> oneToMany(childStream: DataStream<Event<K, U>>,
-                      parentKeySelector: KeySelector<U, K>,
-                      relationship: Relationship.OneToMany<U>): Relationships<K, V> {
+    fun <CK, CV> oneToMany(childStream: DataStream<Event<CK, CV>>,
+                           parentKeySelector: KeySelector<CV, PK>,
+                           relationship: Relationship.OneToMany<CK, CV>): Relationships<PK, PV> {
 
         val rekeyedChildStream = childStream
-                .keyBy({ it.key }, TypeInformation.of(keyClass))
+                .keyBy({ it.key }, TypeInformation.of(relationship.keyClass))
                 .flatMap(RelationshipGuard.forOneToMany(parentKeySelector, relationship.name))
                 .name(relationship.name)
                 .uid(relationship.name)
@@ -30,19 +30,20 @@ class Relationships<K, V>(
         return this
     }
 
-    fun join(): DataStream<RekeyedEvent<K>> {
+    fun join(): DataStream<RekeyedEvent<PK>> {
         val rekeyedParentStream = parentStream
                 .map { it.rekey(it.key, true) }
-                .returns(TypeInformation.of(object : TypeHint<RekeyedEvent<K>>() {}))
+                .returns(TypeInformation.of(object : TypeHint<RekeyedEvent<PK>>() {}))
 
         return rekeyedParentStream
                 .union(*this.rekeyedChildStreams.toTypedArray())
-                .keyBy({ it.key }, TypeInformation.of(keyClass))
+                .keyBy({ it.key }, TypeInformation.of(parentKeyClass))
     }
 
     companion object {
         @JvmStatic
-        inline fun <reified K, V> parent(parentStream: DataStream<Event<K, V>>): Relationships<K, V> =
-                Relationships(parentStream, K::class.java)
+        inline fun <reified PK, PV> withParent(parentStream: DataStream<Event<PK, PV>>): Relationships<PK, PV> {
+            return Relationships(parentStream, PK::class.java)
+        }
     }
 }

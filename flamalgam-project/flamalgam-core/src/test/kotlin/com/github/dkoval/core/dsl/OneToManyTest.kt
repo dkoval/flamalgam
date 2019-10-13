@@ -33,7 +33,7 @@ class OneToManyTest : DataStreamTestBase() {
         val orders = events.filterIsInstance<Int, Order>()
         val lineItems = events.filterIsInstance<Int, LineItem>()
 
-        val result = Relationships.parent(orders)
+        val result = Relationships.withParent(orders)
                 .oneToMany(lineItems, KeySelector { it.orderId }, Relationship.oneToMany("LineItem"))
                 .join()
 

@@ -12,20 +12,20 @@ import org.apache.flink.util.Collector
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-sealed class RelationshipGuard<K, U>(
-        private val parentKeySelector: KeySelector<U, K>,
-        name: String) : RichFlatMapFunction<Event<K, U>, RekeyedEvent<K>>() {
+sealed class RelationshipGuard<CK, CV, PK>(
+        private val parentKeySelector: KeySelector<CV, PK>,
+        name: String) : RichFlatMapFunction<Event<CK, CV>, RekeyedEvent<PK>>() {
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
     private val name = "$name-${javaClass.simpleName}"
-    private lateinit var relationshipState: ValueState<Pair<Event<K, U>, K>>
+    private lateinit var relationshipState: ValueState<Pair<Event<CK, CV>, PK>>
 
     override fun open(parameters: Configuration) {
         relationshipState = runtimeContext.getState(
-                ValueStateDescriptor(name, TypeInformation.of(object : TypeHint<Pair<Event<K, U>, K>>() {})))
+                ValueStateDescriptor(name, TypeInformation.of(object : TypeHint<Pair<Event<CK, CV>, PK>>() {})))
     }
 
-    override fun flatMap(newEvent: Event<K, U>, out: Collector<RekeyedEvent<K>>) {
+    override fun flatMap(newEvent: Event<CK, CV>, out: Collector<RekeyedEvent<PK>>) {
         val valueInState = relationshipState.value()
 
         // ignore stale events
@@ -59,13 +59,13 @@ sealed class RelationshipGuard<K, U>(
 
     companion object {
         @JvmStatic
-        fun <K, U> forOneToMany(parentKeySelector: KeySelector<U, K>,
-                                name: String): RelationshipGuard<K, U> {
+        fun <CK, CV, PK> forOneToMany(parentKeySelector: KeySelector<CV, PK>,
+                                      name: String): RelationshipGuard<CK, CV, PK> {
             return OneToManyRelationshipGuard(parentKeySelector, name)
         }
     }
 }
 
-private class OneToManyRelationshipGuard<K, U>(
-        parentKeySelector: KeySelector<U, K>,
-        name: String) : RelationshipGuard<K, U>(parentKeySelector, name)
+private class OneToManyRelationshipGuard<CK, CV, PK>(
+        parentKeySelector: KeySelector<CV, PK>,
+        name: String) : RelationshipGuard<CK, CV, PK>(parentKeySelector, name)
