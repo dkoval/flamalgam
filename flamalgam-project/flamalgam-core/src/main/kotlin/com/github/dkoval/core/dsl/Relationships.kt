@@ -1,6 +1,6 @@
 package com.github.dkoval.core.dsl
 
-import com.github.dkoval.core.dsl.internal.RelationshipGuard
+import com.github.dkoval.core.dsl.internal.OneToManyRelationshipGuard
 import com.github.dkoval.core.event.Event
 import com.github.dkoval.core.event.RekeyedEvent
 import com.github.dkoval.core.event.rekey
@@ -22,7 +22,7 @@ class Relationships<PK, PV>(
 
         val rekeyedChildStream = childStream
                 .keyBy({ it.key }, TypeInformation.of(relationship.keyClass))
-                .flatMap(RelationshipGuard.forOneToMany(parentKeySelector, relationship.name))
+                .flatMap(OneToManyRelationshipGuard(parentKeySelector, relationship.name))
                 .name(relationship.name)
                 .uid(relationship.name)
 

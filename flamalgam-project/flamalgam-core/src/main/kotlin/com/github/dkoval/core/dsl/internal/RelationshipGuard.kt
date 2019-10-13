@@ -56,16 +56,8 @@ sealed class RelationshipGuard<CK, CV, PK>(
             out.collect(event)
         }
     }
-
-    companion object {
-        @JvmStatic
-        fun <CK, CV, PK> forOneToMany(parentKeySelector: KeySelector<CV, PK>,
-                                      name: String): RelationshipGuard<CK, CV, PK> {
-            return OneToManyRelationshipGuard(parentKeySelector, name)
-        }
-    }
 }
 
-private class OneToManyRelationshipGuard<CK, CV, PK>(
+class OneToManyRelationshipGuard<CK, CV, PK>(
         parentKeySelector: KeySelector<CV, PK>,
         name: String) : RelationshipGuard<CK, CV, PK>(parentKeySelector, name)
