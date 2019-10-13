@@ -29,9 +29,9 @@ sealed class RelationshipGuard<K, U>(
         val valueInState = relationshipState.value()
 
         // ignore stale events
-        valueInState?.also { (oldEvent, _) ->
-            if (!newEvent.isNewerThan(oldEvent)) {
-                logger.debug("Ignoring stale record. New event: {}, current event: {}", newEvent, oldEvent)
+        valueInState?.also { (lastSeenEvent, _) ->
+            if (!newEvent.isNewerThan(lastSeenEvent)) {
+                logger.debug("Ignoring stale event. New event: {}, last seen event: {}", newEvent, lastSeenEvent)
                 return@flatMap
             }
         }
@@ -40,12 +40,12 @@ sealed class RelationshipGuard<K, U>(
         val newParentKey = parentKeySelector.getKey(newEvent.value)
         relationshipState.update(newEvent to newParentKey)
 
-        // handle relationship change
-        valueInState?.also { (_, oldParentKey) ->
-            if (newParentKey == null || oldParentKey != newParentKey) {
+        // handle scenario where a child gets attached to the new parent
+        valueInState?.also { (_, lastSeenParentKey) ->
+            if (newParentKey == null || lastSeenParentKey != newParentKey) {
                 // emit `relationship discarded` event
-                val event = RelationshipDiscardedEvent(newEvent.key, newEvent.version, oldParentKey)
-                        .rekey(oldParentKey)
+                val event = RelationshipDiscardedEvent(
+                        newEvent.key, newEvent.version, lastSeenParentKey).rekey(lastSeenParentKey)
                 out.collect(event)
             }
         }
