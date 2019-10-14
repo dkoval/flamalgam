@@ -3,9 +3,11 @@ package com.github.dkoval.core.dsl
 import com.github.dkoval.core.event.*
 import io.flinkspector.core.collection.ExpectedRecords
 import io.flinkspector.core.input.InputBuilder
+import io.flinkspector.core.input.InputTranslator
 import io.flinkspector.datastream.DataStreamTestBase
+import org.apache.flink.api.common.typeinfo.TypeHint
+import org.apache.flink.api.java.tuple.Tuple1
 import org.apache.flink.streaming.api.datastream.DataStream
-import org.junit.Ignore
 import org.junit.Test
 
 class OneToManyTest : DataStreamTestBase() {
@@ -20,13 +22,28 @@ class OneToManyTest : DataStreamTestBase() {
             val quantity: Int = 1)
 
     private fun join(input: InputBuilder<Event<Long, Any>>): DataStream<RekeyedEvent<Long>> {
-        val events: DataStream<Event<Long, Any>> = createTestStream(input)
+        val events: DataStream<Event<Long, Any>> = doCreateTestStream(input)
         val orders = events.filterIsInstance<Long, Order>()
         val lineItems = events.filterIsInstance<Long, LineItem>()
 
         return Relationships.withParent(orders)
                 .oneToMany(lineItems, { it.orderId }, Relationship.oneToMany("LineItem"))
                 .join()
+    }
+
+    private fun <K> doCreateTestStream(input: InputBuilder<Event<K, Any>>): DataStream<Event<K, Any>> {
+        // Wrapping/unwrapping Event<K, Any> to/from Tuple1<Event<K, Any>> is sort of a hack to allow
+        // different types of events to be added to the same DataStream instance. The trick is meant to workaround
+        // >> org.apache.flink.streaming.api.functions.source.FromElementsFunction.checkCollection(FromElementsFunction.java)
+        // check in Apache Flink.
+        val translatedInput = object : InputTranslator<Event<K, Any>, Tuple1<Event<K, Any>>>(input) {
+            override fun translate(elem: Event<K, Any>): Tuple1<Event<K, Any>> {
+                return Tuple1.of(elem)
+            }
+        }
+        return createTestStream(translatedInput)
+                .map { it.f0 }
+                .returns(object : TypeHint<Event<K, Any>>() {})
     }
 
     @Test
@@ -82,7 +99,6 @@ class OneToManyTest : DataStreamTestBase() {
         assertStream(result, matcher)
     }
 
-    @Ignore // currently fails due to org.apache.flink.streaming.api.functions.source.FromElementsFunction.checkCollection(FromElementsFunction.java:228)
     @Test
     fun `should create Order and then handle LineItem deletes`() {
         val input = InputBuilder<Event<Long, Any>>()

@@ -43,6 +43,11 @@
                 <version>${slf4j.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.flinkspector</groupId>
                 <artifactId>flinkspector-datastream_2.11</artifactId>
                 <version>${flinkspector.version}</version>

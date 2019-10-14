@@ -25,9 +25,11 @@ sealed class RelationshipGuard<CK, CV, PK>(
     }
 
     override fun flatMap(newEvent: Event<CK, CV>, out: Collector<RekeyedEvent<PK>>) {
+        logger.debug("New event received: {}", newEvent)
         val valueInState = relationshipState.value()
 
         // ignore stale events
+        logger.debug("Value in state: {}", valueInState)
         valueInState?.also { (lastSeenEvent, _) ->
             if (!newEvent.isNewerThan(lastSeenEvent)) {
                 logger.debug("Ignoring stale event. New event: {}, last seen event: {}", newEvent, lastSeenEvent)
