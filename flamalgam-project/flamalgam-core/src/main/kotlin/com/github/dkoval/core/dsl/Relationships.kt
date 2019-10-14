@@ -18,7 +18,6 @@ class Relationships<PK, PV>(
     fun <CK, CV> oneToMany(childStream: DataStream<Event<CK, CV>>,
                            parentKeySelector: (CV) -> PK,
                            relationship: Relationship.OneToMany<CK, CV>): Relationships<PK, PV> {
-
         val rekeyedChildStream = childStream
                 .keyBy({ it.key }, TypeInformation.of(relationship.keyClass))
                 .flatMap(OneToManyRelationshipGuard(parentKeySelector, relationship.name))
