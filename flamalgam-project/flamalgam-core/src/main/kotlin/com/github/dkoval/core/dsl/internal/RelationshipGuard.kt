@@ -6,23 +6,22 @@ import org.apache.flink.api.common.state.ValueState
 import org.apache.flink.api.common.state.ValueStateDescriptor
 import org.apache.flink.api.common.typeinfo.TypeHint
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.api.java.functions.KeySelector
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.util.Collector
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 sealed class RelationshipGuard<CK, CV, PK>(
-        private val parentKeySelector: KeySelector<CV, PK>,
+        private val parentKeySelector: (CV) -> PK,
         name: String) : RichFlatMapFunction<Event<CK, CV>, RekeyedEvent<PK>>() {
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
     private val name = "$name-${javaClass.simpleName}"
-    private lateinit var relationshipState: ValueState<Pair<Event<CK, CV>, PK>>
+    private lateinit var relationshipState: ValueState<Pair<Event<CK, CV>, PK?>>
 
     override fun open(parameters: Configuration) {
         relationshipState = runtimeContext.getState(
-                ValueStateDescriptor(name, TypeInformation.of(object : TypeHint<Pair<Event<CK, CV>, PK>>() {})))
+                ValueStateDescriptor(name, TypeInformation.of(object : TypeHint<Pair<Event<CK, CV>, PK?>>() {})))
     }
 
     override fun flatMap(newEvent: Event<CK, CV>, out: Collector<RekeyedEvent<PK>>) {
@@ -37,12 +36,12 @@ sealed class RelationshipGuard<CK, CV, PK>(
         }
 
         // update the state of relationship
-        val newParentKey = parentKeySelector.getKey(newEvent.value)
+        val newParentKey = newEvent.value?.let(parentKeySelector)
         relationshipState.update(newEvent to newParentKey)
 
         // handle scenario where a child gets attached to the new parent
         valueInState?.also { (_, lastSeenParentKey) ->
-            if (newParentKey == null || lastSeenParentKey != newParentKey) {
+            if ((lastSeenParentKey != null) && (newParentKey == null || lastSeenParentKey != newParentKey)) {
                 // emit `relationship discarded` event
                 val event = RelationshipDiscardedEvent(
                         newEvent.key, newEvent.version, lastSeenParentKey).rekey(lastSeenParentKey)
@@ -59,5 +58,5 @@ sealed class RelationshipGuard<CK, CV, PK>(
 }
 
 class OneToManyRelationshipGuard<CK, CV, PK>(
-        parentKeySelector: KeySelector<CV, PK>,
+        parentKeySelector: (CV) -> PK,
         name: String) : RelationshipGuard<CK, CV, PK>(parentKeySelector, name)

@@ -6,7 +6,6 @@ import com.github.dkoval.core.event.RekeyedEvent
 import com.github.dkoval.core.event.rekey
 import org.apache.flink.api.common.typeinfo.TypeHint
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.api.java.functions.KeySelector
 import org.apache.flink.streaming.api.datastream.DataStream
 import java.util.*
 
@@ -17,7 +16,7 @@ class Relationships<PK, PV>(
     private val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<PK>>> = LinkedList()
 
     fun <CK, CV> oneToMany(childStream: DataStream<Event<CK, CV>>,
-                           parentKeySelector: KeySelector<CV, PK>,
+                           parentKeySelector: (CV) -> PK,
                            relationship: Relationship.OneToMany<CK, CV>): Relationships<PK, PV> {
 
         val rekeyedChildStream = childStream
