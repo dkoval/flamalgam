@@ -86,11 +86,12 @@ class OneToManyTest : DataStreamTestBase() {
                 .emit(UpsertEvent(1L, 1L, Order(1L)))
                 .emit(UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1")))
                 .emit(UpsertEvent(1L, 3L, LineItem(1L, 1L, "T-shirt v3")))
+                // LineItem update v2 comes out-of-order
                 .emit(UpsertEvent(1L, 2L, LineItem(1L, 1L, "T-shirt v2")))
 
         val result = runTestCase(input)
 
-        // assert that out-of-order LineItem updates are handled properly, that is, an older update v2 gets ignored
+        // assert out-of-order LineItem updates are handled properly, i.e. an older update v2 gets ignored
         val matcher = ExpectedRecords
                 .create(RekeyedEvent(1L, UpsertEvent(1L, 1L, Order(1L)), isParent = true))
                 .expect(RekeyedEvent(1L, UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1"))))
@@ -112,6 +113,29 @@ class OneToManyTest : DataStreamTestBase() {
                 .create(RekeyedEvent(1L, UpsertEvent(1L, 1L, Order(1L)), isParent = true))
                 .expect(RekeyedEvent(1L, UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1"))))
                 .expect(RekeyedEvent(1L, DeleteEvent(1L, 2L, LineItem::class.java)))
+
+        assertStream(result, matcher)
+    }
+
+    @Test
+    fun `should create 2 Orders and then handle relationship changes between LineItem and Order`() {
+        val input = InputBuilder<Event<Long, Any>>()
+                .emit(UpsertEvent(1L, 1L, Order(1L)))
+                .emit(UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1")))
+                .emit(UpsertEvent(2L, 1L, Order(2L)))
+                .emit(UpsertEvent(2L, 1L, LineItem(2L, 2L, "Boots v1")))
+                // now LineItem(id=2) gets re-attached to Order(id=1), previous association gets discarded
+                .emit(UpsertEvent(2L, 2L, LineItem(2L, 1L, "Boots v2")))
+
+        val result = runTestCase(input)
+
+        val matcher = ExpectedRecords
+                .create(RekeyedEvent(1L, UpsertEvent(1L, 1L, Order(1L)), isParent = true))
+                .expect(RekeyedEvent(1L, UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1"))))
+                .expect(RekeyedEvent(2L, UpsertEvent(2L, 1L, Order(2L)), isParent = true))
+                .expect(RekeyedEvent(2L, UpsertEvent(2L, 1L, LineItem(2L, 2L, "Boots v1"))))
+                .expect(RekeyedEvent(2L, RelationshipDiscardedEvent(2L, 2L, LineItem::class.java, 2L)))
+                .expect(RekeyedEvent(1L, UpsertEvent(2L, 2L, LineItem(2L, 1L, "Boots v2"))))
 
         assertStream(result, matcher)
     }
