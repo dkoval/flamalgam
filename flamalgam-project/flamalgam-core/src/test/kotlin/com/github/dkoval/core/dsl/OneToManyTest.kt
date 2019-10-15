@@ -21,7 +21,7 @@ class OneToManyTest : DataStreamTestBase() {
             val product: String,
             val quantity: Int = 1)
 
-    private fun join(input: InputBuilder<Event<Long, Any>>): DataStream<RekeyedEvent<Long>> {
+    private fun runTestCase(input: InputBuilder<Event<Long, Any>>): DataStream<RekeyedEvent<Long>> {
         val events: DataStream<Event<Long, Any>> = doCreateTestStream(input)
         val orders = events.filterIsInstance<Long, Order>()
         val lineItems = events.filterIsInstance<Long, LineItem>()
@@ -31,7 +31,7 @@ class OneToManyTest : DataStreamTestBase() {
                 .join()
     }
 
-    private fun <K> doCreateTestStream(input: InputBuilder<Event<K, Any>>): DataStream<Event<K, Any>> {
+    private fun <K : Any> doCreateTestStream(input: InputBuilder<Event<K, Any>>): DataStream<Event<K, Any>> {
         // Wrapping/unwrapping Event<K, Any> to/from Tuple1<Event<K, Any>> is sort of a hack to allow
         // different types of events to be added to the same DataStream instance. The trick is meant to workaround
         // >> org.apache.flink.streaming.api.functions.source.FromElementsFunction.checkCollection(FromElementsFunction.java)
@@ -53,7 +53,7 @@ class OneToManyTest : DataStreamTestBase() {
                 .emit(UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1")))
                 .emit(UpsertEvent(2L, 1L, LineItem(2L, 1L, "Boots v1")))
 
-        val result = join(input)
+        val result = runTestCase(input)
 
         val matcher = ExpectedRecords
                 .create(RekeyedEvent(1L, UpsertEvent(1L, 1L, Order(1L)), isParent = true))
@@ -70,7 +70,7 @@ class OneToManyTest : DataStreamTestBase() {
                 .emit(UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1")))
                 .emit(UpsertEvent(1L, 2L, LineItem(1L, 1L, "T-shirt v2")))
 
-        val result = join(input)
+        val result = runTestCase(input)
 
         val matcher = ExpectedRecords
                 .create(RekeyedEvent(1L, UpsertEvent(1L, 1L, Order(1L)), isParent = true))
@@ -88,7 +88,7 @@ class OneToManyTest : DataStreamTestBase() {
                 .emit(UpsertEvent(1L, 3L, LineItem(1L, 1L, "T-shirt v3")))
                 .emit(UpsertEvent(1L, 2L, LineItem(1L, 1L, "T-shirt v2")))
 
-        val result = join(input)
+        val result = runTestCase(input)
 
         // assert that out-of-order LineItem updates are handled properly, that is, an older update v2 gets ignored
         val matcher = ExpectedRecords
@@ -104,14 +104,14 @@ class OneToManyTest : DataStreamTestBase() {
         val input = InputBuilder<Event<Long, Any>>()
                 .emit(UpsertEvent(1L, 1L, Order(1L)))
                 .emit(UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1")))
-                .emit(DeleteEvent<Long, LineItem>(1L, 2L))
+                .emit(DeleteEvent(1L, 2L, LineItem::class.java))
 
-        val result = join(input)
+        val result = runTestCase(input)
 
         val matcher = ExpectedRecords
                 .create(RekeyedEvent(1L, UpsertEvent(1L, 1L, Order(1L)), isParent = true))
                 .expect(RekeyedEvent(1L, UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1"))))
-                .expect(RekeyedEvent(1L, DeleteEvent<Long, LineItem>(1L, 2L)))
+                .expect(RekeyedEvent(1L, DeleteEvent(1L, 2L, LineItem::class.java)))
 
         assertStream(result, matcher)
     }

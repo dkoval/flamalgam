@@ -9,15 +9,15 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.datastream.DataStream
 import java.util.*
 
-class Relationships<PK, PV>(
+class Relationships<PK : Any, PV : Any>(
         private val parentStream: DataStream<Event<PK, PV>>,
         private val parentKeyClass: Class<PK>) {
 
     private val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<PK>>> = LinkedList()
 
-    fun <CK, CV> oneToMany(childStream: DataStream<Event<CK, CV>>,
-                           parentKeySelector: (CV) -> PK,
-                           relationship: Relationship.OneToMany<CK, CV>): Relationships<PK, PV> {
+    fun <CK : Any, CV : Any> oneToMany(childStream: DataStream<Event<CK, CV>>,
+                                       parentKeySelector: (CV) -> PK,
+                                       relationship: Relationship.OneToMany<CK, CV>): Relationships<PK, PV> {
         val rekeyedChildStream = childStream
                 .keyBy({ it.key }, TypeInformation.of(relationship.keyClass))
                 .flatMap(OneToManyRelationshipGuard(parentKeySelector, relationship.name))
@@ -40,7 +40,7 @@ class Relationships<PK, PV>(
 
     companion object {
         @JvmStatic
-        inline fun <reified PK, PV> withParent(parentStream: DataStream<Event<PK, PV>>): Relationships<PK, PV> {
+        inline fun <reified PK : Any, PV : Any> withParent(parentStream: DataStream<Event<PK, PV>>): Relationships<PK, PV> {
             return Relationships(parentStream, PK::class.java)
         }
     }

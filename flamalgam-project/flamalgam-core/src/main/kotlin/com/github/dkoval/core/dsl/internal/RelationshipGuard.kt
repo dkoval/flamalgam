@@ -11,7 +11,7 @@ import org.apache.flink.util.Collector
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-sealed class RelationshipGuard<CK, CV, PK>(
+sealed class RelationshipGuard<CK : Any, CV : Any, PK : Any>(
         private val parentKeySelector: (CV) -> PK,
         name: String) : RichFlatMapFunction<Event<CK, CV>, RekeyedEvent<PK>>() {
 
@@ -28,25 +28,26 @@ sealed class RelationshipGuard<CK, CV, PK>(
         logger.debug("New event received: {}", newEvent)
         val valueInState = relationshipState.value()
 
-        // ignore stale events
         logger.debug("Value in state: {}", valueInState)
-        valueInState?.also { (lastSeenEvent, _) ->
-            if (!newEvent.isNewerThan(lastSeenEvent)) {
-                logger.debug("Ignoring stale event. New event: {}, last seen event: {}", newEvent, lastSeenEvent)
-                return@flatMap
-            }
+        val oldEvent = valueInState?.first
+
+        // ignore stale events
+        if (oldEvent != null && !newEvent.isNewerThan(oldEvent)) {
+            logger.debug("Ignoring stale event. New event: {}, last seen event: {}", newEvent, oldEvent)
+            return
         }
 
         // update the state of relationship
-        val newParentKey = newEvent.value?.let(parentKeySelector)
+        val oldParentKey = valueInState?.second
+        val newParentKey = if (newEvent is DeleteEvent<CK, CV>) oldParentKey else newEvent.value?.let(parentKeySelector)
         relationshipState.update(newEvent to newParentKey)
 
         // handle scenario where a child gets attached to the new parent
-        valueInState?.also { (_, lastSeenParentKey) ->
-            if ((lastSeenParentKey != null) && (newParentKey == null || lastSeenParentKey != newParentKey)) {
+        oldParentKey?.also {
+            if (newParentKey == null || it != newParentKey) {
                 // emit `relationship discarded` event
                 val event = RelationshipDiscardedEvent(
-                        newEvent.key, newEvent.version, lastSeenParentKey).rekey(lastSeenParentKey)
+                        newEvent.key, newEvent.version, newEvent.valueClass, it).rekey(it)
                 out.collect(event)
             }
         }
@@ -59,6 +60,6 @@ sealed class RelationshipGuard<CK, CV, PK>(
     }
 }
 
-class OneToManyRelationshipGuard<CK, CV, PK>(
+class OneToManyRelationshipGuard<CK : Any, CV : Any, PK : Any>(
         parentKeySelector: (CV) -> PK,
         name: String) : RelationshipGuard<CK, CV, PK>(parentKeySelector, name)

@@ -1,28 +1,32 @@
 package com.github.dkoval.core.event
 
-sealed class InternalEvent<out K, out V> : Event<K, V>
+sealed class InternalEvent<out K : Any, out V : Any> : Event<K, V>
 
-data class RelationshipDiscardedEvent<out K, out PK>(
-        override val key: K,
+data class RelationshipDiscardedEvent<out CK : Any, out CV : Any, out PK : Any>(
+        override val key: CK,
         override val version: Long,
-        val oldParentKey: PK) : InternalEvent<K, Nothing>() {
+        override val valueClass: Class<out CV>,
+        val oldParentKey: PK) : InternalEvent<CK, CV>() {
 
     override val value: Nothing
         get() = throw IllegalStateException("No value is expected here")
 }
 
-data class RekeyedEvent<out K>(
+data class RekeyedEvent<out K : Any>(
         override val key: K,
         val source: Event<*, *>,
-        val isParent: Boolean = false) : InternalEvent<K, Any?>() {
+        val isParent: Boolean = false) : InternalEvent<K, Any>() {
 
     override val version: Long
         get() = source.version
 
     override val value: Any?
         get() = source.value
+
+    override val valueClass: Class<out Any>
+        get() = source.valueClass
 }
 
-fun <K, V> Event<*, V>.rekey(key: K, asParent: Boolean = false): RekeyedEvent<K> {
+fun <K : Any> Event<*, *>.rekey(key: K, asParent: Boolean = false): RekeyedEvent<K> {
     return RekeyedEvent(key, this, asParent);
 }

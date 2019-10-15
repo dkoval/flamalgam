@@ -1,15 +1,20 @@
 package com.github.dkoval.core.event
 
-sealed class LifecycleEvent<out K, out V> : Event<K, V>
+sealed class LifecycleEvent<out K : Any, out V : Any> : Event<K, V>
 
-data class UpsertEvent<out K, out V>(
+data class UpsertEvent<out K : Any, out V : Any>(
         override val key: K,
         override val version: Long,
-        override val value: V) : LifecycleEvent<K, V>()
+        override val value: V) : LifecycleEvent<K, V>() {
 
-data class DeleteEvent<out K, V>(
+    override val valueClass: Class<out V>
+        get() = value.javaClass
+}
+
+data class DeleteEvent<out K : Any, out V : Any>(
         override val key: K,
-        override val version: Long) : LifecycleEvent<K, V>() {
+        override val version: Long,
+        override val valueClass: Class<out V>) : LifecycleEvent<K, V>() {
 
     override val value: V?
         get() = null
