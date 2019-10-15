@@ -46,16 +46,13 @@ sealed class RelationshipGuard<CK : Any, CV : Any, PK : Any>(
         oldParentKey?.also {
             if (newParentKey == null || it != newParentKey) {
                 // emit `relationship discarded` event
-                val event = RelationshipDiscardedEvent(
-                        newEvent.key, newEvent.version, newEvent.valueClass, it).rekey(it)
-                out.collect(event)
+                out.collect(newEvent.discardRelationship(it).rekey(it))
             }
         }
 
-        // emit regular event
         newParentKey?.also {
-            val event = newEvent.rekey(it)
-            out.collect(event)
+            // emit regular event
+            out.collect(newEvent.rekey(it))
         }
     }
 }

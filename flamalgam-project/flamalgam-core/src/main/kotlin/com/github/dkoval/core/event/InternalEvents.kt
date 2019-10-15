@@ -12,6 +12,9 @@ data class RelationshipDiscardedEvent<out CK : Any, out CV : Any, out PK : Any>(
         get() = throw IllegalStateException("No value is expected here")
 }
 
+fun <CK : Any, CV : Any, PK : Any> Event<CK, CV>.discardRelationship(oldParentKey: PK): RelationshipDiscardedEvent<CK, CV, PK> =
+        RelationshipDiscardedEvent(key, version, valueClass, oldParentKey)
+
 data class RekeyedEvent<out K : Any>(
         override val key: K,
         val source: Event<*, *>,
@@ -27,6 +30,5 @@ data class RekeyedEvent<out K : Any>(
         get() = source.valueClass
 }
 
-fun <K : Any> Event<*, *>.rekey(key: K, asParent: Boolean = false): RekeyedEvent<K> {
-    return RekeyedEvent(key, this, asParent);
-}
+fun <K : Any> Event<*, *>.rekey(key: K, asParent: Boolean = false): RekeyedEvent<K> =
+        RekeyedEvent(key, this, asParent)
