@@ -57,7 +57,7 @@ class JoinableRelationships<PK : Any, PV : Any>(
 
     fun join(): DataStream<RekeyedEvent<PK>> {
         val rekeyedParentStream = parentStream
-                .map { it.rekey(it.key, true) }
+                .map { it.rekey(it.key, asParent = true) }
                 .returns(TypeInformation.of(object : TypeHint<RekeyedEvent<PK>>() {}))
 
         return rekeyedParentStream
