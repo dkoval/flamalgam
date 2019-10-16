@@ -17,36 +17,42 @@ open class Relationships<PK : Any, PV : Any> protected constructor(
 
     protected val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<PK>>> = LinkedList()
 
-    open fun <CK : Any, CV : Any> oneToMany(childStream: DataStream<Event<CK, CV>>,
-                                            parentKeySelector: (CV) -> PK?,
-                                            cardinality: Cardinality.Many<CK, CV>): JoinableRelationships<PK, PV> {
+    open fun <CK : Any, CV : Any> and(childStream: DataStream<Event<CK, CV>>): BuildRelationshipStep<PK, PV, CK, CV> {
         return JoinableRelationships(this)
-                .oneToMany(childStream, parentKeySelector, cardinality)
+                .and(childStream)
+    }
+
+    class BuildRelationshipStep<PK : Any, PV : Any, CK : Any, CV : Any>(
+            private val childStream: DataStream<Event<CK, CV>>,
+            private val relationships: JoinableRelationships<PK, PV>) {
+
+        fun oneToMany(parentKeySelector: (CV) -> PK?,
+                      cardinality: Cardinality.Many<CK, CV>): JoinableRelationships<PK, PV> {
+
+            val rekeyedChildStream = childStream
+                    .keyBy({ it.key }, TypeInformation.of(cardinality.keyClass))
+                    .flatMap(OneToManyRelationshipGuard(parentKeySelector, cardinality.name))
+                    .name(cardinality.name)
+                    .uid(cardinality.name)
+
+            relationships.rekeyedChildStreams.add(rekeyedChildStream)
+            return relationships
+        }
     }
 
     companion object {
         @JvmStatic
-        inline fun <reified PK : Any, PV : Any> withParent(parentStream: DataStream<Event<PK, PV>>): Relationships<PK, PV> {
+        inline fun <reified PK : Any, PV : Any> between(parentStream: DataStream<Event<PK, PV>>): Relationships<PK, PV> {
             return Relationships(parentStream, PK::class.java)
         }
     }
 }
 
 class JoinableRelationships<PK : Any, PV : Any>(
-        relationships: Relationships<PK, PV>
-) : Relationships<PK, PV>(relationships) {
+        relationships: Relationships<PK, PV>) : Relationships<PK, PV>(relationships) {
 
-    override fun <CK : Any, CV : Any> oneToMany(childStream: DataStream<Event<CK, CV>>,
-                                                parentKeySelector: (CV) -> PK?,
-                                                cardinality: Cardinality.Many<CK, CV>): JoinableRelationships<PK, PV> {
-        val rekeyedChildStream = childStream
-                .keyBy({ it.key }, TypeInformation.of(cardinality.keyClass))
-                .flatMap(OneToManyRelationshipGuard(parentKeySelector, cardinality.name))
-                .name(cardinality.name)
-                .uid(cardinality.name)
-
-        rekeyedChildStreams.add(rekeyedChildStream)
-        return this
+    override fun <CK : Any, CV : Any> and(childStream: DataStream<Event<CK, CV>>): BuildRelationshipStep<PK, PV, CK, CV> {
+        return BuildRelationshipStep(childStream, this)
     }
 
     fun join(): DataStream<RekeyedEvent<PK>> {
