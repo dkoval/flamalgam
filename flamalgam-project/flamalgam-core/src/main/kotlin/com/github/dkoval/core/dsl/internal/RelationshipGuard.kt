@@ -12,7 +12,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
 sealed class RelationshipGuard<CK : Any, CV : Any, PK : Any>(
-        private val parentKeySelector: (CV) -> PK,
+        private val parentKeySelector: (CV) -> PK?,
         name: String) : RichFlatMapFunction<Event<CK, CV>, RekeyedEvent<PK>>() {
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
@@ -58,5 +58,5 @@ sealed class RelationshipGuard<CK : Any, CV : Any, PK : Any>(
 }
 
 class OneToManyRelationshipGuard<CK : Any, CV : Any, PK : Any>(
-        parentKeySelector: (CV) -> PK,
+        parentKeySelector: (CV) -> PK?,
         name: String) : RelationshipGuard<CK, CV, PK>(parentKeySelector, name)

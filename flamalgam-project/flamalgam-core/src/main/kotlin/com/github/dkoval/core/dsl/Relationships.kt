@@ -9,20 +9,41 @@ import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.datastream.DataStream
 import java.util.*
 
-class Relationships<PK : Any, PV : Any>(
-        private val parentStream: DataStream<Event<PK, PV>>,
-        private val parentKeyClass: Class<PK>) {
+open class Relationships<PK : Any, PV : Any> protected constructor(
+        protected val parentStream: DataStream<Event<PK, PV>>,
+        protected val parentKeyClass: Class<PK>) {
 
-    private val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<PK>>> = LinkedList()
+    protected constructor(other: Relationships<PK, PV>) : this(other.parentStream, other.parentKeyClass)
 
-    fun <CK : Any, CV : Any> oneToMany(childStream: DataStream<Event<CK, CV>>,
-                                       parentKeySelector: (CV) -> PK,
-                                       relationship: Relationship.OneToMany<CK, CV>): Relationships<PK, PV> {
+    protected val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<PK>>> = LinkedList()
+
+    open fun <CK : Any, CV : Any> oneToMany(childStream: DataStream<Event<CK, CV>>,
+                                            parentKeySelector: (CV) -> PK?,
+                                            cardinality: Cardinality.Many<CK, CV>): JoinableRelationships<PK, PV> {
+        return JoinableRelationships(this)
+                .oneToMany(childStream, parentKeySelector, cardinality)
+    }
+
+    companion object {
+        @JvmStatic
+        inline fun <reified PK : Any, PV : Any> withParent(parentStream: DataStream<Event<PK, PV>>): Relationships<PK, PV> {
+            return Relationships(parentStream, PK::class.java)
+        }
+    }
+}
+
+class JoinableRelationships<PK : Any, PV : Any>(
+        relationships: Relationships<PK, PV>
+) : Relationships<PK, PV>(relationships) {
+
+    override fun <CK : Any, CV : Any> oneToMany(childStream: DataStream<Event<CK, CV>>,
+                                                parentKeySelector: (CV) -> PK?,
+                                                cardinality: Cardinality.Many<CK, CV>): JoinableRelationships<PK, PV> {
         val rekeyedChildStream = childStream
-                .keyBy({ it.key }, TypeInformation.of(relationship.keyClass))
-                .flatMap(OneToManyRelationshipGuard(parentKeySelector, relationship.name))
-                .name(relationship.name)
-                .uid(relationship.name)
+                .keyBy({ it.key }, TypeInformation.of(cardinality.keyClass))
+                .flatMap(OneToManyRelationshipGuard(parentKeySelector, cardinality.name))
+                .name(cardinality.name)
+                .uid(cardinality.name)
 
         rekeyedChildStreams.add(rekeyedChildStream)
         return this
@@ -36,12 +57,5 @@ class Relationships<PK : Any, PV : Any>(
         return rekeyedParentStream
                 .union(*this.rekeyedChildStreams.toTypedArray())
                 .keyBy({ it.key }, TypeInformation.of(parentKeyClass))
-    }
-
-    companion object {
-        @JvmStatic
-        inline fun <reified PK : Any, PV : Any> withParent(parentStream: DataStream<Event<PK, PV>>): Relationships<PK, PV> {
-            return Relationships(parentStream, PK::class.java)
-        }
     }
 }
