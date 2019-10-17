@@ -15,10 +15,8 @@ open class Relationships<PK : Any, PV : Any> protected constructor(
 
     protected val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<PK>>> = LinkedList()
 
-    protected constructor(other: Relationships<PK, PV>) : this(other.parentStream, other.parentKeyClass)
-
     open fun <CK : Any, CV : Any> and(childStream: DataStream<Event<CK, CV>>): BuildRelationshipStep<PK, PV, CK, CV> {
-        return JoinableRelationships(this)
+        return JoinableRelationships(parentStream, parentKeyClass)
                 .and(childStream)
     }
 
@@ -54,7 +52,8 @@ open class Relationships<PK : Any, PV : Any> protected constructor(
 }
 
 class JoinableRelationships<PK : Any, PV : Any>(
-        relationships: Relationships<PK, PV>) : Relationships<PK, PV>(relationships) {
+        parentStream: DataStream<Event<PK, PV>>,
+        parentKeyClass: Class<PK>) : Relationships<PK, PV>(parentStream, parentKeyClass) {
 
     override fun <CK : Any, CV : Any> and(childStream: DataStream<Event<CK, CV>>): BuildRelationshipStep<PK, PV, CK, CV> {
         return BuildRelationshipStep(childStream, this)
@@ -66,7 +65,7 @@ class JoinableRelationships<PK : Any, PV : Any>(
                 .returns(TypeInformation.of(object : TypeHint<RekeyedEvent<PK>>() {}))
 
         return rekeyedParentStream
-                .union(*this.rekeyedChildStreams.toTypedArray())
+                .union(*rekeyedChildStreams.toTypedArray())
                 .keyBy({ it.key }, TypeInformation.of(parentKeyClass))
     }
 }
