@@ -27,7 +27,7 @@ class OneToManyTest : DataStreamTestBase() {
         val lineItems = events.filterIsInstance<Long, LineItem>()
 
         return Relationships.between(orders)
-                .and(lineItems).oneToMany({ it.orderId }, Cardinality.many("LineItem"))
+                .and(lineItems).oneToMany({ it.orderId }, LookupKey.many("LineItem"))
                 .join()
     }
 

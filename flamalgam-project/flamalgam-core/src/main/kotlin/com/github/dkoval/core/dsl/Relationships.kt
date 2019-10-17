@@ -13,9 +13,9 @@ open class Relationships<PK : Any, PV : Any> protected constructor(
         protected val parentStream: DataStream<Event<PK, PV>>,
         protected val parentKeyClass: Class<PK>) {
 
-    protected constructor(other: Relationships<PK, PV>) : this(other.parentStream, other.parentKeyClass)
-
     protected val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<PK>>> = LinkedList()
+
+    protected constructor(other: Relationships<PK, PV>) : this(other.parentStream, other.parentKeyClass)
 
     open fun <CK : Any, CV : Any> and(childStream: DataStream<Event<CK, CV>>): BuildRelationshipStep<PK, PV, CK, CV> {
         return JoinableRelationships(this)
@@ -26,17 +26,22 @@ open class Relationships<PK : Any, PV : Any> protected constructor(
             private val childStream: DataStream<Event<CK, CV>>,
             private val relationships: JoinableRelationships<PK, PV>) {
 
-        fun oneToMany(parentKeySelector: (CV) -> PK?,
-                      cardinality: Cardinality.Many<CK, CV>): JoinableRelationships<PK, PV> {
+        fun oneToMany(foreignKeySelector: (CV) -> PK?,
+                      lookupKey: LookupKey.Many<CK, CV>): JoinableRelationships<PK, PV> {
 
             val rekeyedChildStream = childStream
-                    .keyBy({ it.key }, TypeInformation.of(cardinality.keyClass))
-                    .flatMap(OneToManyRelationshipGuard(parentKeySelector, cardinality.name))
-                    .name(cardinality.name)
-                    .uid(cardinality.name)
+                    .keyBy({ it.key }, TypeInformation.of(lookupKey.eventKeyClass))
+                    .flatMap(OneToManyRelationshipGuard(foreignKeySelector, lookupKey.name))
+                    .name(lookupKey.name)
+                    .uid(lookupKey.name)
 
             relationships.rekeyedChildStreams.add(rekeyedChildStream)
             return relationships
+        }
+
+        fun manyToOne(foreignKeySelector: (PV) -> CK,
+                      lookupKey: LookupKey.One<CK, CV>): JoinableRelationships<PK, PV> {
+            TODO()
         }
     }
 
