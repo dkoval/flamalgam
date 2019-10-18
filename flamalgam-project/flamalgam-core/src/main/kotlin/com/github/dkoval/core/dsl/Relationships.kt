@@ -1,7 +1,7 @@
 package com.github.dkoval.core.dsl
 
 import com.github.dkoval.core.dsl.internal.OneToManyRelationshipGuard
-import com.github.dkoval.core.event.Event
+import com.github.dkoval.core.event.LifecycleEvent
 import com.github.dkoval.core.event.RekeyedEvent
 import com.github.dkoval.core.event.rekey
 import org.apache.flink.api.common.typeinfo.TypeHint
@@ -10,18 +10,18 @@ import org.apache.flink.streaming.api.datastream.DataStream
 import java.util.*
 
 open class Relationships<PK : Any, PV : Any> protected constructor(
-        protected val parentStream: DataStream<Event<PK, PV>>,
+        protected val parentStream: DataStream<LifecycleEvent<PK, PV>>,
         protected val parentKeyClass: Class<PK>) {
 
     protected val rekeyedChildStreams: MutableList<DataStream<RekeyedEvent<PK>>> = LinkedList()
 
-    open fun <CK : Any, CV : Any> and(childStream: DataStream<Event<CK, CV>>): BuildRelationshipStep<PK, PV, CK, CV> {
+    open fun <CK : Any, CV : Any> and(childStream: DataStream<LifecycleEvent<CK, CV>>): BuildRelationshipStep<PK, PV, CK, CV> {
         return JoinableRelationships(parentStream, parentKeyClass)
                 .and(childStream)
     }
 
     class BuildRelationshipStep<PK : Any, PV : Any, CK : Any, CV : Any>(
-            private val childStream: DataStream<Event<CK, CV>>,
+            private val childStream: DataStream<LifecycleEvent<CK, CV>>,
             private val relationships: JoinableRelationships<PK, PV>) {
 
         fun oneToMany(foreignKeySelector: (CV) -> PK?,
@@ -39,9 +39,9 @@ open class Relationships<PK : Any, PV : Any> protected constructor(
 
         fun manyToOne(foreignKeySelector: (PV) -> CK?,
                       lookupKey: LookupKey.One<CK, CV>): JoinableRelationships<PK, PV> {
-            // relationship change handler
+            // step 1: guard relationship
 
-            // build one-to-many reverse index
+            // step 2: build one-to-many reverse index
 
             TODO()
         }
@@ -49,17 +49,17 @@ open class Relationships<PK : Any, PV : Any> protected constructor(
 
     companion object {
         @JvmStatic
-        inline fun <reified PK : Any, PV : Any> between(parentStream: DataStream<Event<PK, PV>>): Relationships<PK, PV> {
+        inline fun <reified PK : Any, PV : Any> between(parentStream: DataStream<LifecycleEvent<PK, PV>>): Relationships<PK, PV> {
             return Relationships(parentStream, PK::class.java)
         }
     }
 }
 
 class JoinableRelationships<PK : Any, PV : Any>(
-        parentStream: DataStream<Event<PK, PV>>,
+        parentStream: DataStream<LifecycleEvent<PK, PV>>,
         parentKeyClass: Class<PK>) : Relationships<PK, PV>(parentStream, parentKeyClass) {
 
-    override fun <CK : Any, CV : Any> and(childStream: DataStream<Event<CK, CV>>): BuildRelationshipStep<PK, PV, CK, CV> {
+    override fun <CK : Any, CV : Any> and(childStream: DataStream<LifecycleEvent<CK, CV>>): BuildRelationshipStep<PK, PV, CK, CV> {
         return BuildRelationshipStep(childStream, this)
     }
 

@@ -13,18 +13,18 @@ import org.slf4j.LoggerFactory
 
 sealed class RelationshipGuard<CK : Any, CV : Any, PK : Any>(
         private val foreignKeySelector: (CV) -> PK?,
-        name: String) : RichFlatMapFunction<Event<CK, CV>, RekeyedEvent<PK>>() {
+        name: String) : RichFlatMapFunction<LifecycleEvent<CK, CV>, RekeyedEvent<PK>>() {
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
     private val name = "$name-${javaClass.simpleName}"
-    private lateinit var relationshipState: ValueState<Pair<Event<CK, CV>, PK?>>
+    private lateinit var relationshipState: ValueState<Pair<LifecycleEvent<CK, CV>, PK?>>
 
     override fun open(parameters: Configuration) {
         relationshipState = runtimeContext.getState(
-                ValueStateDescriptor(name, TypeInformation.of(object : TypeHint<Pair<Event<CK, CV>, PK?>>() {})))
+                ValueStateDescriptor(name, TypeInformation.of(object : TypeHint<Pair<LifecycleEvent<CK, CV>, PK?>>() {})))
     }
 
-    override fun flatMap(newEvent: Event<CK, CV>, out: Collector<RekeyedEvent<PK>>) {
+    override fun flatMap(newEvent: LifecycleEvent<CK, CV>, out: Collector<RekeyedEvent<PK>>) {
         logger.debug("New event received: {}", newEvent)
         val valueInState = relationshipState.value()
 

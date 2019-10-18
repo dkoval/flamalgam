@@ -12,6 +12,21 @@ import org.junit.Test
 
 class OneToManyTest : DataStreamTestBase() {
 
+    private fun <K : Any> doCreateTestStream(input: InputBuilder<LifecycleEvent<K, Any>>): DataStream<LifecycleEvent<K, Any>> {
+        // Wrapping/unwrapping Event<K, Any> to/from Tuple1<Event<K, Any>> is sort of a hack to allow
+        // different types of events to be added to the same DataStream instance. The trick is meant to workaround
+        // >> org.apache.flink.streaming.api.functions.source.FromElementsFunction.checkCollection(FromElementsFunction.java)
+        // check in Apache Flink.
+        val translatedInput = object : InputTranslator<LifecycleEvent<K, Any>, Tuple1<LifecycleEvent<K, Any>>>(input) {
+            override fun translate(elem: LifecycleEvent<K, Any>): Tuple1<LifecycleEvent<K, Any>> {
+                return Tuple1.of(elem)
+            }
+        }
+        return createTestStream(translatedInput)
+                .map { it.f0 }
+                .returns(object : TypeHint<LifecycleEvent<K, Any>>() {})
+    }
+
     data class Order(
             val id: Long)
 
@@ -21,8 +36,8 @@ class OneToManyTest : DataStreamTestBase() {
             val product: String,
             val quantity: Int = 1)
 
-    private fun runTestCase(input: InputBuilder<Event<Long, Any>>): DataStream<RekeyedEvent<Long>> {
-        val events: DataStream<Event<Long, Any>> = doCreateTestStream(input)
+    private fun runTestCase(input: InputBuilder<LifecycleEvent<Long, Any>>): DataStream<RekeyedEvent<Long>> {
+        val events: DataStream<LifecycleEvent<Long, Any>> = doCreateTestStream(input)
         val orders = events.filterIsInstance<Long, Order>()
         val lineItems = events.filterIsInstance<Long, LineItem>()
 
@@ -31,24 +46,9 @@ class OneToManyTest : DataStreamTestBase() {
                 .join()
     }
 
-    private fun <K : Any> doCreateTestStream(input: InputBuilder<Event<K, Any>>): DataStream<Event<K, Any>> {
-        // Wrapping/unwrapping Event<K, Any> to/from Tuple1<Event<K, Any>> is sort of a hack to allow
-        // different types of events to be added to the same DataStream instance. The trick is meant to workaround
-        // >> org.apache.flink.streaming.api.functions.source.FromElementsFunction.checkCollection(FromElementsFunction.java)
-        // check in Apache Flink.
-        val translatedInput = object : InputTranslator<Event<K, Any>, Tuple1<Event<K, Any>>>(input) {
-            override fun translate(elem: Event<K, Any>): Tuple1<Event<K, Any>> {
-                return Tuple1.of(elem)
-            }
-        }
-        return createTestStream(translatedInput)
-                .map { it.f0 }
-                .returns(object : TypeHint<Event<K, Any>>() {})
-    }
-
     @Test
     fun `should create Order with 2 LineItems`() {
-        val input = InputBuilder<Event<Long, Any>>()
+        val input = InputBuilder<LifecycleEvent<Long, Any>>()
                 .emit(UpsertEvent(1L, 1L, Order(1L)))
                 .emit(UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1")))
                 .emit(UpsertEvent(2L, 1L, LineItem(2L, 1L, "Boots v1")))
@@ -65,7 +65,7 @@ class OneToManyTest : DataStreamTestBase() {
 
     @Test
     fun `should create Order and then handle LineItem updates`() {
-        val input = InputBuilder<Event<Long, Any>>()
+        val input = InputBuilder<LifecycleEvent<Long, Any>>()
                 .emit(UpsertEvent(1L, 1L, Order(1L)))
                 .emit(UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1")))
                 .emit(UpsertEvent(1L, 2L, LineItem(1L, 1L, "T-shirt v2")))
@@ -82,7 +82,7 @@ class OneToManyTest : DataStreamTestBase() {
 
     @Test
     fun `should create Order and then handle stale LineItem updates`() {
-        val input = InputBuilder<Event<Long, Any>>()
+        val input = InputBuilder<LifecycleEvent<Long, Any>>()
                 .emit(UpsertEvent(1L, 1L, Order(1L)))
                 .emit(UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1")))
                 .emit(UpsertEvent(1L, 3L, LineItem(1L, 1L, "T-shirt v3")))
@@ -102,7 +102,7 @@ class OneToManyTest : DataStreamTestBase() {
 
     @Test
     fun `should create Order and then handle LineItem deletes`() {
-        val input = InputBuilder<Event<Long, Any>>()
+        val input = InputBuilder<LifecycleEvent<Long, Any>>()
                 .emit(UpsertEvent(1L, 1L, Order(1L)))
                 .emit(UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1")))
                 .emit(DeleteEvent(1L, 2L, LineItem::class.java))
@@ -119,7 +119,7 @@ class OneToManyTest : DataStreamTestBase() {
 
     @Test
     fun `should create 2 Orders and then handle relationship changes between LineItem and Order`() {
-        val input = InputBuilder<Event<Long, Any>>()
+        val input = InputBuilder<LifecycleEvent<Long, Any>>()
                 .emit(UpsertEvent(1L, 1L, Order(1L)))
                 .emit(UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1")))
                 .emit(UpsertEvent(2L, 1L, Order(2L)))
