@@ -37,8 +37,12 @@ open class Relationships<PK : Any, PV : Any> protected constructor(
             return relationships
         }
 
-        fun manyToOne(foreignKeySelector: (PV) -> CK,
+        fun manyToOne(foreignKeySelector: (PV) -> CK?,
                       lookupKey: LookupKey.One<CK, CV>): JoinableRelationships<PK, PV> {
+            // relationship change handler
+
+            // build one-to-many reverse index
+
             TODO()
         }
     }

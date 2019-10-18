@@ -16,6 +16,6 @@ data class DeleteEvent<out K : Any, out V : Any>(
         override val version: Long,
         override val valueClass: Class<out V>) : LifecycleEvent<K, V>() {
 
-    override val value: V?
-        get() = null
+    override val value: Nothing
+        get() = throw IllegalStateException("No value is expected here")
 }
