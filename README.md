@@ -1,7 +1,8 @@
 # flamalgam 
 
 [![Build Status](https://travis-ci.org/dkoval/flamalgam.svg?branch=master)](https://travis-ci.org/dkoval/flamalgam)
-[![GitHub License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
+[![Coverage Status](https://img.shields.io/codecov/c/github/dkoval/flamalgam.svg)](https://codecov.io/github/dkoval/flamalgam)
+[![Apache 2.0 License](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
 
 Apache Flink-powered Implementation of relational JOIN operator on infinite data streams.
 
