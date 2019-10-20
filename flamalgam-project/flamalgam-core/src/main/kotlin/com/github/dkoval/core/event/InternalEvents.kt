@@ -6,11 +6,7 @@ data class RelationshipDiscardedEvent<out CK : Any, out CV : Any, out PK : Any>(
         override val key: CK,
         override val version: Long,
         override val valueClass: Class<out CV>,
-        val oldParentKey: PK) : InternalEvent<CK, CV>() {
-
-    override val value: Nothing
-        get() = throw IllegalStateException("No value is expected here")
-}
+        val oldParentKey: PK) : InternalEvent<CK, CV>(), NoValueEvent<CK, CV>
 
 fun <CK : Any, CV : Any, PK : Any> Event<CK, CV>.discardRelationship(oldParentKey: PK): RelationshipDiscardedEvent<CK, CV, PK> =
         RelationshipDiscardedEvent(key, version, valueClass, oldParentKey)

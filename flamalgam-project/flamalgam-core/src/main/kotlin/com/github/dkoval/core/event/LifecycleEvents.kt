@@ -14,8 +14,4 @@ data class UpsertEvent<out K : Any, out V : Any>(
 data class DeleteEvent<out K : Any, out V : Any>(
         override val key: K,
         override val version: Long,
-        override val valueClass: Class<out V>) : LifecycleEvent<K, V>() {
-
-    override val value: Nothing
-        get() = throw IllegalStateException("No value is expected here")
-}
+        override val valueClass: Class<out V>) : LifecycleEvent<K, V>(), NoValueEvent<K, V>

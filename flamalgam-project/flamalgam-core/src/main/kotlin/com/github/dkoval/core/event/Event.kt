@@ -7,6 +7,11 @@ interface Event<out K : Any, out V : Any> {
     val valueClass: Class<out V>
 }
 
-fun <K : Any, V : Any> Event<K, V>.isNewerThan(that: Event<K, V>): Boolean {
-    return if (this === that) false else compareBy<Event<K, V>> { it.version }.compare(this, that) > 0
+interface NoValueEvent<out K : Any, out V : Any> : Event<K, V> {
+    @JvmDefault
+    override val value: Nothing
+        get() = throw IllegalStateException("No value is expected here")
 }
+
+fun <K : Any, V : Any> Event<K, V>.isNewerThan(that: Event<K, V>): Boolean =
+        if (this === that) false else compareBy<Event<K, V>> { it.version }.compare(this, that) > 0
