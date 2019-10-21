@@ -6,10 +6,16 @@ data class RelationshipDiscardedEvent<out CK : Any, out CV : Any, out PK : Any>(
         override val key: CK,
         override val version: Long,
         override val valueClass: Class<out CV>,
-        val oldParentKey: PK) : InternalEvent<CK, CV>(), NoValueEvent<CK, CV>
+        val foreignKey: PK) : InternalEvent<CK, CV>(), NoValueEvent<CK, CV>
 
-fun <CK : Any, CV : Any, PK : Any> Event<CK, CV>.discardRelationship(oldParentKey: PK): RelationshipDiscardedEvent<CK, CV, PK> =
-        RelationshipDiscardedEvent(key, version, valueClass, oldParentKey)
+fun <CK : Any, CV : Any, PK : Any> LifecycleEvent<CK, CV>.discardRelationship(foreignKey: PK): RelationshipDiscardedEvent<CK, CV, PK> =
+        RelationshipDiscardedEvent(key, version, valueClass, foreignKey)
+
+data class LinkedEvent<out K : Any, out V : Any, out FK : Any>(
+        override val key: K,
+        override val version: Long,
+        override val valueClass: Class<out V>,
+        val foreignKey: FK) : InternalEvent<K, V>(), NoValueEvent<K, V>
 
 data class RekeyedEvent<out K : Any>(
         override val key: K,

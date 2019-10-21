@@ -11,20 +11,20 @@ import org.apache.flink.util.Collector
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-sealed class RelationshipGuard<CK : Any, CV : Any, PK : Any>(
-        private val foreignKeySelector: (CV) -> PK?,
-        name: String) : RichFlatMapFunction<LifecycleEvent<CK, CV>, RekeyedEvent<PK>>() {
+sealed class RelationshipGuard<K : Any, V : Any, FK : Any, R : InternalEvent<*, *>>(
+        private val foreignKeySelector: (V) -> FK?,
+        name: String) : RichFlatMapFunction<LifecycleEvent<K, V>, R>() {
 
     private val logger: Logger = LoggerFactory.getLogger(javaClass)
     private val name = "$name-${javaClass.simpleName}"
-    private lateinit var relationshipState: ValueState<Pair<LifecycleEvent<CK, CV>, PK?>>
+    private lateinit var relationshipState: ValueState<Pair<NoValueEvent<K, V>, FK?>>
 
     override fun open(parameters: Configuration) {
         relationshipState = runtimeContext.getState(
-                ValueStateDescriptor(name, TypeInformation.of(object : TypeHint<Pair<LifecycleEvent<CK, CV>, PK?>>() {})))
+                ValueStateDescriptor(name, TypeInformation.of(object : TypeHint<Pair<NoValueEvent<K, V>, FK?>>() {})))
     }
 
-    override fun flatMap(newEvent: LifecycleEvent<CK, CV>, out: Collector<RekeyedEvent<PK>>) {
+    override fun flatMap(newEvent: LifecycleEvent<K, V>, collector: Collector<R>) {
         logger.debug("New event received: {}", newEvent)
         val valueInState = relationshipState.value()
 
@@ -38,25 +38,43 @@ sealed class RelationshipGuard<CK : Any, CV : Any, PK : Any>(
         }
 
         // update the state of relationship
-        val oldParentKey = valueInState?.second
-        val newParentKey = if (newEvent is DeleteEvent<CK, CV>) oldParentKey else newEvent.value?.let(foreignKeySelector)
-        relationshipState.update(newEvent to newParentKey)
+        val oldForeignKey = valueInState?.second
+        val newForeignKey = if (newEvent is DeleteEvent<K, V>) oldForeignKey else newEvent.value?.let(foreignKeySelector)
+        relationshipState.update(newEvent.withoutValue() to newForeignKey)
 
         // handle scenario where a child gets attached to the new parent
-        oldParentKey?.also {
-            if (newParentKey == null || it != newParentKey) {
+        oldForeignKey?.also {
+            if (newForeignKey == null || it != newForeignKey) {
                 // emit `relationship discarded` event
-                out.collect(newEvent.discardRelationship(it).rekey(it))
+                val out = mapRelationship(newEvent.discardRelationship(it), it)
+                collector.collect(out)
             }
         }
 
-        newParentKey?.also {
+        newForeignKey?.also {
             // emit regular event
-            out.collect(newEvent.rekey(it))
+            val out = mapRelationship(newEvent, it)
+            collector.collect(out)
         }
+    }
+
+    protected abstract fun mapRelationship(event: Event<K, V>, foreignKey: FK): R
+}
+
+class OneToManyRelationshipGuard<K : Any, V : Any, FK : Any>(
+        foreignKeySelector: (V) -> FK?,
+        name: String) : RelationshipGuard<K, V, FK, RekeyedEvent<FK>>(foreignKeySelector, name) {
+
+    override fun mapRelationship(event: Event<K, V>, foreignKey: FK): RekeyedEvent<FK> {
+        return event.rekey(foreignKey)
     }
 }
 
-class OneToManyRelationshipGuard<CK : Any, CV : Any, PK : Any>(
-        foreignKeySelector: (CV) -> PK?,
-        name: String) : RelationshipGuard<CK, CV, PK>(foreignKeySelector, name)
+class ManyToOneRelationshipGuard<K : Any, V : Any, FK : Any>(
+        foreignKeySelector: (V) -> FK?,
+        name: String) : RelationshipGuard<K, V, FK, LinkedEvent<K, V, FK>>(foreignKeySelector, name) {
+
+    override fun mapRelationship(event: Event<K, V>, foreignKey: FK): LinkedEvent<K, V, FK> {
+        return LinkedEvent(event.key, event.version, event.valueClass, foreignKey)
+    }
+}
