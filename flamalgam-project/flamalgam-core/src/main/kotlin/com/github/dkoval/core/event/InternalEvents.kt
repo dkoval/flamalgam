@@ -2,12 +2,12 @@ package com.github.dkoval.core.event
 
 sealed class InternalEvent<out K : Any, out V : Any> : Event<K, V>
 
-data class RelationshipDiscardedEvent<out CK : Any, out CV : Any>(
-        override val key: CK,
+data class RelationshipDiscardedEvent<out K : Any, out V : Any>(
+        override val key: K,
         override val version: Long,
-        override val valueClass: Class<out CV>) : InternalEvent<CK, CV>(), NoValueEvent<CK, CV>
+        override val valueClass: Class<out V>) : InternalEvent<K, V>(), NoValueEvent<K, V>
 
-fun <CK : Any, CV : Any> LifecycleEvent<CK, CV>.discardRelationship(): RelationshipDiscardedEvent<CK, CV> =
+fun <K : Any, V : Any> LifecycleEvent<K, V>.discardRelationship(): RelationshipDiscardedEvent<K, V> =
         RelationshipDiscardedEvent(key, version, valueClass)
 
 data class LinkedEvent<out K : Any, out V : Any, out FK : Any>(
