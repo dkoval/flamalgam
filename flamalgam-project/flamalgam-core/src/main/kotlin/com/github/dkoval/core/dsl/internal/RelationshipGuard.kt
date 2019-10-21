@@ -46,7 +46,7 @@ sealed class RelationshipGuard<K : Any, V : Any, FK : Any, R : InternalEvent<*, 
         oldForeignKey?.also {
             if (newForeignKey == null || it != newForeignKey) {
                 // emit `relationship discarded` event
-                val out = mapRelationship(newEvent.discardRelationship(it), it)
+                val out = mapRelationship(newEvent.discardRelationship(), it)
                 collector.collect(out)
             }
         }

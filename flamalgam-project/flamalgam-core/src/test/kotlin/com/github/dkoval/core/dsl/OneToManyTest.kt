@@ -134,7 +134,7 @@ class OneToManyTest : DataStreamTestBase() {
                 .expect(RekeyedEvent(1L, UpsertEvent(1L, 1L, LineItem(1L, 1L, "T-shirt v1"))))
                 .expect(RekeyedEvent(2L, UpsertEvent(2L, 1L, Order(2L)), isParent = true))
                 .expect(RekeyedEvent(2L, UpsertEvent(2L, 1L, LineItem(2L, 2L, "Boots v1"))))
-                .expect(RekeyedEvent(2L, RelationshipDiscardedEvent(2L, 2L, LineItem::class.java, 2L)))
+                .expect(RekeyedEvent(2L, RelationshipDiscardedEvent(2L, 2L, LineItem::class.java)))
                 .expect(RekeyedEvent(1L, UpsertEvent(2L, 2L, LineItem(2L, 1L, "Boots v2"))))
 
         assertStream(result, matcher)
